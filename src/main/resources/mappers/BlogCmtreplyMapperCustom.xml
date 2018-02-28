@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.sgmp.blog.managerblog.mapper.BlogCmtreplyMapperCustom" >
+  <resultMap id="QueryResultMap" type="com.sgmp.blog.managerblog.pojo.BlogCmtreply" >
+    <id column="id" property="id" jdbcType="INTEGER" />
+    <result column="commentid" property="commentid"/>
+    <result column="recontent" property="content"/>
+    <result column="repalyid" property="repalyid" />
+    <result column="fromuserid" property="fromuserid" />
+    <result column="touserid" property="touserid"/>
+    <result column="time" property="time"/>
+  </resultMap>
+
+
+  <select id="query" resultMap="QueryResultMap">
+    SELECT id,commentid,repalyid,content as recontent, fromuserid,touserid,time FROM blog_cmtreply ORDER BY blog_cmtreply.time desc
+  </select>
+  <select id="querybyreid"  parameterType="java.lang.Integer" resultMap="QueryResultMap">
+    SELECT id,commentid,repalyid,content as recontent, fromuserid,touserid,time FROM blog_cmtreply WHERE blog_cmtreply.id=#{id}
+  </select>
+
+</mapper>

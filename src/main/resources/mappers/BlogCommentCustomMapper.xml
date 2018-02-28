@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.sgmp.blog.managerblog.mapper.BlogCommentMapperCustom">
+    <resultMap id="QueryArticleReply" type="com.sgmp.blog.managerblog.pojo.BlogCommentCustom">
+        <id column="cmid" property="id"/>
+        <result column="cmcontent" property="content"></result>
+        <result column="cmarticleid" property="articleid"></result>
+        <result column="cmuserid" property="userid"></result>
+        <result column="cmtime" property="time"></result>
+        <association property="blogArticle" javaType="com.sgmp.blog.managerblog.pojo.BlogArticle">
+            <result column="arid" property="id"></result>
+            <result column="artitle" property="title"></result>
+            <result column="ardescc" property="descz"></result>
+            <result column="arcontent" property="content"></result>
+            <result column="isreommend" property="isreommend"></result>
+            <result column="ckickcount" property="ckickcount"></result>
+            <result column="arcreatedate" property="createdate"></result>
+            <result column="arupdatedate" property="updatedate"></result>
+            <result column="arcatelog" property="category"></result>
+            <result column="artag" property="tag"></result>
+        </association>
+        <!--<association property="blogReply" javaType="com.sgmp.blog.managerblog.pojo.BlogCmtreply">
+          <result column="cmreply" property="content"></result>
+          <result column="cmtreplyid" property="id"></result>
+          <result column="repalyid" property="repalyid"></result>
+        </association>-->
+        <collection property="blogReply" column="comtid" javaType="ArrayList"
+                    ofType="com.sgmp.blog.managerblog.pojo.BlogCmtreply"
+                    select="slectReplay">
+        </collection>
+
+    </resultMap>
+
+    <resultMap id="QueryResultMap" type="com.sgmp.blog.managerblog.pojo.BlogComment">
+        <id column="cmid" property="id"></id>
+        <result column="arid" property="articleid"></result>
+        <result column="cmcontent" property="content"></result>
+        <result column="cmtime" property="time"></result>
+        <result column="userid" property="userid"></result>
+    </resultMap>
+
+    <resultMap id="ReplyResultMap" type="com.sgmp.blog.managerblog.pojo.BlogCmtreply">
+        <id column="repalyid" property="id"></id>
+        <result column="recmid" property="commentid"></result>
+        <result column="repalyid" property="repalyid"></result>
+        <result column="recontent" property="content"></result>
+        <result column="fromuserid" property="fromuserid"></result>
+        <result column="touserid" property="touserid"></result>
+        <result column="retime" property="time"></result>
+    </resultMap>
+
+    <select id="queryarticclereplay" resultMap="QueryArticleReply">
+    select blog_comment.id as cmid,
+       blog_comment.content as cmcontent,
+        blog_comment.articleid as cmarticleid,
+        blog_comment.userid as cmuserid,
+        blog_comment.time as cmtime,
+        blog_article.id as arid,
+        blog_article.title as artitle,
+        blog_article.descz as ardescc,
+        blog_article.content as arcontent,
+        blog_article.isrecommend,
+        blog_article.ckickcount,
+        blog_article.createdate as arcreatedate,
+        blog_article.updatedate as arupdatedate,
+        blog_article.category as arcatelog,
+        blog_article.tag as artag,
+        blog_cmtreply.id as repalyid,
+        blog_cmtreply.commentid as recmid,
+        blog_cmtreply.repalyid,
+        blog_cmtreply.content as recontent,
+        blog_cmtreply.fromuserid,
+        blog_cmtreply.touserid,
+        blog_cmtreply.time as retime
+     FROM blog_comment
+    LEFT JOIN blog_article ON blog_article.id=blog_comment.articleid
+    LEFT JOIN blog_cmtreply ON blog_comment.id=blog_cmtreply.commentid
+  </select>
+
+    <select id="queryarticclereplaybyid" parameterType="java.lang.String" resultMap="QueryArticleReply">
+        select blog_comment.id as cmid,
+        blog_comment.content as cmcontent,
+        blog_comment.articleid as cmarticleid,
+        blog_comment.userid as cmuserid,
+        blog_comment.time as cmtime,
+        blog_article.id as arid,
+        blog_article.title as artitle,
+        blog_article.descz as ardescc,
+        blog_article.content as arcontent,
+        blog_article.isrecommend,
+        blog_article.ckickcount,
+        blog_article.createdate as arcreatedate,
+        blog_article.updatedate as arupdatedate,
+        blog_article.category as arcatelog,
+        blog_article.tag as artag,
+        blog_cmtreply.id as repalyid,
+        blog_cmtreply.commentid as recmid,
+        blog_cmtreply.repalyid,
+        blog_cmtreply.content as recontent,
+        blog_cmtreply.fromuserid,
+        blog_cmtreply.touserid,
+        blog_cmtreply.time as retime
+        FROM blog_comment
+        LEFT JOIN blog_article ON blog_article.id=blog_comment.articleid
+        LEFT JOIN blog_cmtreply ON blog_comment.id=blog_cmtreply.commentid
+
+        where blog_article.id=#{arid}
+    </select>
+
+
+    <select id="slectReplay" parameterType="java.lang.Integer" resultMap="ReplyResultMap">
+    Select * from blog_cmtreply WHERE blog_cmtreply.commentid=#{comtid}
+  </select>
+
+    <select id="query" parameterType="java.lang.String" resultMap="QueryResultMap">
+        select blog_comment.id as cmid,
+       blog_comment.articleid as arid,
+       blog_comment.content as cmcontent,
+       blog_comment.time as cmtime,
+       blog_comment.userid
+        FROM
+        blog_comment
+
+        WHERE blog_comment.articleid=#{arid}
+        ORDER BY blog_comment.time desc
+    </select>
+
+    <select id="querybyid" parameterType="java.lang.Integer" resultMap="QueryResultMap">
+        select blog_comment.id as cmid,
+        blog_comment.articleid as arid,
+        blog_comment.content as cmcontent,
+        blog_comment.time as cmtime,
+        blog_comment.userid
+        FROM
+        blog_comment
+        WHERE blog_comment.id=#{cmid}
+    </select>
+
+
+</mapper>
