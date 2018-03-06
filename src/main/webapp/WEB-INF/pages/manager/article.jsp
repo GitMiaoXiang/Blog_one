@@ -103,7 +103,7 @@
                                 <div class="tpl-i-title">
                                     ${article.title}
                                 </div>
-                                <a href="javascript:;" class="tpl-table-images-content-i">
+                                <%--<a href="javascript:;" class="tpl-table-images-content-i">
                                     <div class="tpl-table-images-content-i-info">
                                             <span class="ico">
                                     <img src="<%=path%>assets/img/user02.png" alt="">追逐
@@ -112,7 +112,7 @@
                                     </div>
                                     <span class="tpl-table-images-content-i-shadow"></span>
                                     <img src="${article.src}" style="width: 435px;height: 313px" alt="">
-                                </a>
+                                </a>--%>
                                 <div class="tpl-table-images-content-block">
                                     <div class="tpl-i-font">
                                         ${article.descz}

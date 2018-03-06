@@ -65,7 +65,7 @@ public class BlogArticleServieImpl extends BaseService<BlogArticle> {
         objects.setOrderBy("ckickcount desc");
         Example example = new Example(BlogArticle.class);
         Example.Criteria criteria = example.createCriteria();
-        criteria.andEqualTo("category",caid);
+        criteria.andEqualTo("category", caid);
         return getMapper().selectByExample(example);
     }
 
@@ -73,15 +73,15 @@ public class BlogArticleServieImpl extends BaseService<BlogArticle> {
      * 根据时间排序查询，并显示分页
      */
     public List<BlogArticleCustom> querybydatatime() {
-        PageHelper.startPage(0,3);
+        PageHelper.startPage(0, 3);
         List<BlogArticleCustom> blogArticleCustoms = new ArrayList<>();
         Example example = new Example(BlogArticle.class);
         example.setOrderByClause("isrecommend desc,updatedate desc");
         Example.Criteria criteria = example.createCriteria();
-        criteria.andEqualTo("updownframe","1");
+        criteria.andEqualTo("updownframe", "1");
         List<BlogArticle> articleList = getMapper().selectByExample(example);
-        for (BlogArticle blogArticle:articleList) {
-            BlogArticleCustom blogArticleCustom=new BlogArticleCustom();
+        for (BlogArticle blogArticle : articleList) {
+            BlogArticleCustom blogArticleCustom = new BlogArticleCustom();
             blogArticleCustom.setCount(blogCommentService.count(blogArticle.getId()));
             List<BlogImages> images = blogImagesService.querybyarid(blogArticle.getId());
             for (BlogImages blogImages : images) {
@@ -105,6 +105,7 @@ public class BlogArticleServieImpl extends BaseService<BlogArticle> {
 
     /**
      * 查询文章归档
+     *
      * @param i
      */
     public List<BlogCategoryCustom> querybycategroid(Integer i) {
@@ -112,14 +113,14 @@ public class BlogArticleServieImpl extends BaseService<BlogArticle> {
         Example example = new Example(BlogCategory.class);
         example.setOrderByClause("sortz");
         Example.Criteria criteria = example.createCriteria();
-        criteria.andEqualTo("indexz",i);
+        criteria.andEqualTo("indexz", i);
         List<BlogCategory> articleList = blogCategoryService.getMapper().selectByExample(example);
-        for (BlogCategory blogCategory: articleList) {
-            BlogCategoryCustom blogCategoryCustom=new BlogCategoryCustom();
+        for (BlogCategory blogCategory : articleList) {
+            BlogCategoryCustom blogCategoryCustom = new BlogCategoryCustom();
             Example example1 = new Example(BlogArticle.class);
             Example.Criteria criteria1 = example1.createCriteria();
-            criteria1.andEqualTo("category",blogCategory.getId());
-            criteria1.andEqualTo("updownframe","1");
+            criteria1.andEqualTo("category", blogCategory.getId());
+            criteria1.andEqualTo("updownframe", "1");
             blogCategoryCustom.setCount(this.getMapper().selectCountByExample(example1));
             blogCategoryCustom.setName(blogCategory.getName());
             blogCategoryCustom.setId(blogCategory.getId());
@@ -129,20 +130,130 @@ public class BlogArticleServieImpl extends BaseService<BlogArticle> {
     }
 
     /**
+     * 判断tag是否一样
+     * @param blogArticle
+     * @return
+     */
+    public BlogArticle querybytags(BlogArticle blogArticle){
+        BlogArticle bllist=null;
+        Example example = new Example(BlogArticle.class);
+        Example.Criteria criteria = example.createCriteria();
+        criteria.andEqualTo("tags",blogArticle.getTags());
+        List<BlogArticle> articleList = getMapper().selectByExample(example);
+        for (BlogArticle bllist1:articleList) {
+            bllist=bllist1;
+        }
+        return  bllist;
+    }
+
+    /**
      * 添加博文和上传缩略图
+     *
      * @param blogArticle
      * @param images
      */
     @Transactional(rollbackFor = Exception.class)
-    public boolean saveandimages(BlogArticle blogArticle, MultipartFile images) throws Exception{
+    public boolean saveandimages(BlogArticle blogArticle, MultipartFile images) throws Exception {
+        Integer back=0,back2 =0 ,back3 = 0;
         SimpleDateFormat simpleDateFormatstr = new SimpleDateFormat(getDifferenceTime.TIMEFORMATSTR);
-        String id=simpleDateFormatstr.format(new Date())+(int)Math.random()*10;
+        String id = simpleDateFormatstr.format(new Date()) + (int) Math.random() * 10;
+        if (blogArticle.getId() == null || blogArticle.getId().length() <= 0) {
+            blogArticle.setCreatedate(new Date());
+            blogArticle.setUpdatedate(new Date());
+            blogArticle.setId(id);
+            blogArticle.setCkickcount(0);
+            back = super.save(blogArticle);
+            blogArticle.setId(null);
+        } else {
+            //更新数据
+            blogArticle.setCreatedate(null);
+            blogArticle.setCkickcount(null);
+            blogArticle.setUpdatedate(new Date());
+            blogArticle.setUpdownframe(null);
+            back = super.updateSlective(blogArticle);
+        }
+        if (images != null && back == 1) {
+            //上传图片
+            BlogImages blogImages = new BlogImages();
+            String originaFilename = images.getOriginalFilename();
+            if (images != null && originaFilename != null && originaFilename.length() > 0) {
+                //存储图片的物理路径
+                String pic_path = "E:\\JavaEE\\images\\";
+				/*String pic_path="E:\\JavaEE\\images\\"*/
+                //新的图片名称
+                String newFileName = UUID.randomUUID() + originaFilename.substring(originaFilename.lastIndexOf("."));
+                //新图片
+                File newFile = new File(pic_path + newFileName);
+                //将内存中的数据写入磁盘
+                images.transferTo(newFile);
+
+                //将图片名称写到MealOrder中
+                blogImages.setName(newFileName);
+                blogImages.setArid(blogArticle.getId());
+                blogImages.setTitle(blogArticle.getTitle());
+                blogImages.setDescz(blogArticle.getDescz());
+                blogImages.setSrc("http://localhost:8080/blog/arimages/" + newFileName + "");
+                blogImages.setUploadtime(new Date());
+                back3 = blogImagesService.save(blogImages);
+            }else{
+                back3=1;
+            }
+        }
+        //标签
+                String[] tags = blogArticle.getTags().split(",");
+                for (int i = 0; i < tags.length; i++) {
+                    BlogTag querybyname = blogTagService.querybyname(tags[i]);
+                    //没有查询到tag
+                    if (querybyname == null) {
+                        BlogTag blogTag = new BlogTag();
+                        blogTag.setName(tags[i]);
+                        blogTag.setTime(new Date());
+                        blogTag.setNumber(1);
+                        Integer tagid = blogTagService.savequerytagid(blogTag);
+                        BlogTagmap blogTagmap = new BlogTagmap();
+                        blogTagmap.setTaid(tagid);
+                        blogTagmap.setArid(id);
+                        back2 = blogTagMapService.save(blogTagmap);
+                        //新增文章有新的7
+                        querybyname.setNumber(querybyname.getNumber() + 1);
+                        blogTagService.updateSlective(querybyname);
+                        BlogTagmap blogTagmap1 = new BlogTagmap();
+                        blogTagmap1.setTaid(querybyname.getId());
+                        blogTagmap1.setArid(id);
+                        back2 = blogTagMapService.save(blogTagmap1);
+                    }else if(querybyname!=null&&blogArticle.getId()!=null){
+                        back2=1;
+                    }
+                }
+        if (back == 1 && back2 == 1 && back3 == 1) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        /*SimpleDateFormat simpleDateFormatstr = new SimpleDateFormat(getDifferenceTime.TIMEFORMATSTR);
+        String id = simpleDateFormatstr.format(new Date()) + (int) Math.random() * 10;
         //标签
         String[] tags = blogArticle.getTags().split(",");
-        for(int i=0;i<tags.length;i++){
+        for (int i = 0; i < tags.length; i++) {
             BlogTag querybyname = blogTagService.querybyname(tags[i]);
-            if(querybyname==null){
-                BlogTag blogTag=new BlogTag();
+            if (querybyname == null) {
+                BlogTag blogTag = new BlogTag();
                 blogTag.setName(tags[i]);
                 blogTag.setTime(new Date());
                 blogTag.setNumber(1);
@@ -151,18 +262,20 @@ public class BlogArticleServieImpl extends BaseService<BlogArticle> {
                 blogTagmap.setTaid(tagid);
                 blogTagmap.setArid(id);
                 Integer save = blogTagMapService.save(blogTagmap);
-                if(save!=1){
+                if (save != 1) {
                     break;
                 }
-            } else if(querybyname!=null){
+            } else if (querybyname != null) {
+                querybyname.setNumber(querybyname.getNumber() + 1);
+                blogTagService.updateSlective(querybyname);
                 BlogTagmap blogTagmap = new BlogTagmap();
                 blogTagmap.setTaid(querybyname.getId());
                 blogTagmap.setArid(id);
                 Integer save = blogTagMapService.save(blogTagmap);
-                if(save!=1){
+                if (save != 1) {
                     break;
                 }
-            }else if(blogArticle.getId()==null){
+            }*//*else if(blogArticle.getId()==null){
                 querybyname.setNumber(querybyname.getNumber()+1);
                 querybyname.setTime(new Date());
                 Integer integer = blogTagService.updateSlective(querybyname);
@@ -171,16 +284,16 @@ public class BlogArticleServieImpl extends BaseService<BlogArticle> {
                 }
             }else{
                 continue;
-            }
+            }*//*
         }
-        Integer back=0;
-        if(blogArticle.getId()==null||blogArticle.getId().length()<=0){
+        Integer back = 0;
+        if (blogArticle.getId() == null || blogArticle.getId().length() <= 0) {
             blogArticle.setCreatedate(new Date());
             blogArticle.setUpdatedate(new Date());
             blogArticle.setId(id);
             blogArticle.setCkickcount(0);
             back = super.save(blogArticle);
-        }else {
+        } else {
             //更新数据
             blogArticle.setCreatedate(null);
             blogArticle.setCkickcount(null);
@@ -191,15 +304,15 @@ public class BlogArticleServieImpl extends BaseService<BlogArticle> {
 
         //上传图片
         BlogImages blogImages = new BlogImages();
-        String originaFilename=images.getOriginalFilename();
-        if(images!=null&&originaFilename!=null&&originaFilename.length()>0){
+        String originaFilename = images.getOriginalFilename();
+        if (images != null && originaFilename != null && originaFilename.length() > 0) {
             //存储图片的物理路径
             String pic_path = "E:\\JavaEE\\images\\";
-				/*String pic_path="E:\\JavaEE\\images\\"*/
+				*//*String pic_path="E:\\JavaEE\\images\\"*//*
             //新的图片名称
-            String newFileName= UUID.randomUUID()+originaFilename.substring(originaFilename.lastIndexOf("."));
+            String newFileName = UUID.randomUUID() + originaFilename.substring(originaFilename.lastIndexOf("."));
             //新图片
-            File newFile=new File(pic_path+newFileName);
+            File newFile = new File(pic_path + newFileName);
             //将内存中的数据写入磁盘
             images.transferTo(newFile);
 
@@ -208,19 +321,17 @@ public class BlogArticleServieImpl extends BaseService<BlogArticle> {
             blogImages.setArid(blogArticle.getId());
             blogImages.setTitle(blogArticle.getTitle());
             blogImages.setDescz(blogArticle.getDescz());
-            blogImages.setSrc("http://localhost:8080/blog/arimages/"+newFileName+"");
+            blogImages.setSrc("http://localhost:8080/blog/arimages/" + newFileName + "");
             blogImages.setUploadtime(new Date());
         }
-        if(back==1){
-            if(images!=null&&originaFilename!=null&&originaFilename.length()>0){
+        if (back == 1) {
+            if (images != null && originaFilename != null && originaFilename.length() > 0) {
                 Integer save1 = blogImagesService.save(blogImages);
-                if(save1==1) {
+                if (save1 == 1) {
                     return true;
                 }
             }
             return true;
         }
         return false;
-    }
-
-}
+    }*/
